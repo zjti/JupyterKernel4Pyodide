@@ -14,7 +14,7 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.7"
-dependencies = [websockets]
+dependencies = ['websockets']
 
 [tool.setuptools.packages]
 find = {}
