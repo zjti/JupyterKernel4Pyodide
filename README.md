@@ -29,7 +29,7 @@ run `python -m http.server`  and open the page testPyodideKernel.html
 
 
 ## Change the default port for the websocket communication
-change in both files: `simplepyodidekernel/SimplePyodideKernel.py`, 'testPyodideKernel.html'
+change in both files: `simplepyodidekernel/SimplePyodideKernel.py`, `testPyodideKernel.html`
 
 
 
