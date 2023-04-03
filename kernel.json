@@ -1,0 +1,7 @@
+{"argv":["python","-m","simplepyodidekernel.SimplePyodideKernel", "-f", "{connection_file}"],
+ "display_name":"SPyodide",
+  "language": "python", 
+ "env": {
+   "PYTHONPATH": ""
+ }
+}

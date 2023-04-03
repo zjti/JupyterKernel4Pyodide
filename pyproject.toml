@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[project]
+name = "simplepyodidekernel"
+version = "0.0.1"
+
+authors = [
+    {name = "Jonas Geistert", email = "jonas.geistert@zalf.de"},
+]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = []
+
+[tool.setuptools.packages]
+find = {}
