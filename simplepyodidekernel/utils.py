@@ -36,7 +36,7 @@ def copy_file_to_pyodide(src,dst):
             c = await c.send(json.dumps({'type':'code', 'code':code}))
 
         print(code) 
-    run_coro(async_copy_file_to_pyodide(src,src)) 
+    run_coro(async_copy_file_to_pyodide(src,dst)) 
 
     
 def copy_dir_to_pyodide(srcpath, dstpath=None):
