@@ -11,6 +11,7 @@ to_ws_queue = asyncio.Queue()
 from_ws_queue = asyncio.Queue()
 from_ws_to_compl_queue = asyncio.Queue()
 connected= set()
+connected_code_backdoor = set()
 
 async def ws_handler(websocket): 
     
@@ -32,7 +33,9 @@ async def ws_handler(websocket):
                 while True:
                     resp= json.loads(await websocket.recv())
                     print('from',resp)
-                    from_ws_queue.put_nowait(resp)
+                    
+                    if 'ignore_response' not in msg:
+                        from_ws_queue.put_nowait(resp)
                      
                     if resp['type']=='cmd' and resp['data']=='break':
                         break
@@ -50,6 +53,21 @@ async def ws_handler(websocket):
         # Unregister.
         from_ws_queue.put_nowait({'type':'return','data':'error in websockethandler'})
         connected.remove(websocket)
+
+async def ws_handler_code_backdoor(websocket): 
+    connected_code_backdoor.add(websocket)
+   
+    try:
+        while True: 
+            msg= json.loads(await websocket.recv())
+            print(msg)
+            msg['ignore_response'] = True
+            to_ws_queue.put_nowait(msg)
+    except: 
+        pass
+    finally:
+        # Unregister.
+        connected_code_backdoor.remove(websocket)
 
 
 class SimplePyodideKernel(Kernel):
@@ -153,8 +171,9 @@ if __name__ == '__main__':
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+    print(1234)
     loop.run_until_complete(websockets.serve(ws_handler, '127.0.0.1', PORT))
+    loop.run_until_complete(websockets.serve(ws_handler_code_backdoor, '127.0.0.1', 8787))
     IPKernelApp.launch_instance(kernel_class=SimplePyodideKernel)
     
     
