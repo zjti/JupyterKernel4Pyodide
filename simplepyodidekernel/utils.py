@@ -23,6 +23,8 @@ with open(dst,'w') as f:
         f.write(line)
 """
 
+print(1234)
+
 def copy_file_to_pyodide(src,dst):
     async def async_copy_file_to_pyodide(src,dst):
         with open(src,'r') as f:
@@ -31,9 +33,9 @@ def copy_file_to_pyodide(src,dst):
         code = s.format(dst,str(lines))
 
         async with websockets.connect('ws://localhost:8787/') as c:
-            await c.send(json.dumps({'type':'code', 'code':code}))
+            c = await c.send(json.dumps({'type':'code', 'code':code}))
 
-        print(code)
+        print(code) 
     run_coro(async_copy_file_to_pyodide(src,src)) 
 
     
@@ -46,6 +48,6 @@ def copy_dir_to_pyodide(srcpath, dstpath=None):
             dstfiles = [src.replace(srcpath,dstpath) for src in srcfiles]
         else:
             dstfiles = srcfiles
-        [run_coro(copy_file_to_pyodide(src,dst)) for src,dst in zip(srcfiles,dstfiles)]
+        [copy_file_to_pyodide(src,dst) for src,dst in zip(srcfiles,dstfiles)]
         
 # import2pyodide()
