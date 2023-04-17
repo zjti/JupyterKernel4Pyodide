@@ -6,24 +6,20 @@ import json
 import psutil
 
 PORT = 8889
+PORT_CODE_BACKDOOR = 8787
 
 to_ws_queue = asyncio.Queue()
-from_ws_queue = asyncio.Queue()
+from_ws_queue = asyncio.Queue() 
 from_ws_to_compl_queue = asyncio.Queue()
+from_ws_to_backdoor_queue = asyncio.Queue()
 connected= set()
 connected_code_backdoor = set()
 
 async def ws_handler(websocket): 
     
     connected.add(websocket) 
-    #clear queue:
-    for _ in range(from_ws_queue.qsize()):
-            from_ws_queue.get_nowait()
-            from_ws_queue.task_done()
-            
-   
+ 
     try:
-        # Broadcast a message to all connected clients.
         while True: 
             msg = await to_ws_queue.get()
             print('to',msg)
@@ -34,7 +30,10 @@ async def ws_handler(websocket):
                     resp= json.loads(await websocket.recv())
                     print('from',resp)
                     
-                    if 'ignore_response' not in msg:
+                    if 'response_to_backdoor' in msg:
+                        from_ws_to_backdoor_queue.put_nowait(resp)
+                    else:
+                        #response to jupyter clients
                         from_ws_queue.put_nowait(resp)
                      
                     if resp['type']=='cmd' and resp['data']=='break':
@@ -48,10 +47,18 @@ async def ws_handler(websocket):
                 break
                 
     except: 
+        #collect all msgs in queue to pyodide:
+        msgs = [await to_ws_queue.get() for _ in range(to_ws_queue.qsize())]
+        
+        #add current (unprocessd msg):
+        msgs = [msg] + msgs 
+        
+        for msg in msgs:
+            to_ws_queue.put_nowait(msg)
+            
         pass
     finally:
-        # Unregister.
-        from_ws_queue.put_nowait({'type':'return','data':'error in websockethandler'})
+        from_ws_queue.put_nowait({'type':'stdout','data':'error in websockethandler'})
         connected.remove(websocket)
 
 async def ws_handler_code_backdoor(websocket): 
@@ -61,8 +68,18 @@ async def ws_handler_code_backdoor(websocket):
         while True: 
             msg= json.loads(await websocket.recv())
             print(msg)
-            msg['ignore_response'] = True
+            msg['response_to_backdoor'] = True
             to_ws_queue.put_nowait(msg)
+            
+            while True:
+                resp =  await from_ws_to_backdoor_queue.get() 
+                await websocket.send(json.dumps(resp))
+                if resp['type']=='cmd' and resp['data']=='break':
+                    break
+                if resp['type']=='return':
+                    break 
+                    
+            
     except: 
         pass
     finally:
@@ -97,6 +114,7 @@ class SimplePyodideKernel(Kernel):
             [p.kill() for p in psutil.process_iter() if 'SimplePyodideKerenel' in  p.cmdline()]
             [p.kill() for p in psutil.process_iter() if 'simple_pyodide_kernel' in  p.cmdline()]
         
+        # return value :
         rv = {'status': 'ok',
                 'execution_count': self.execution_count,
                 'payload': [],
@@ -171,9 +189,9 @@ if __name__ == '__main__':
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    print(1234)
+    print(14)
     loop.run_until_complete(websockets.serve(ws_handler, '127.0.0.1', PORT))
-    loop.run_until_complete(websockets.serve(ws_handler_code_backdoor, '127.0.0.1', 8787))
+    loop.run_until_complete(websockets.serve(ws_handler_code_backdoor, '127.0.0.1', PORT_CODE_BACKDOOR))
     IPKernelApp.launch_instance(kernel_class=SimplePyodideKernel)
     
     
